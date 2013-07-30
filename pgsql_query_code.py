@@ -49,19 +49,21 @@ def get_data_distances(status):
 	cur.execute("TRUNCATE TABLE tblstrikes;")
 	conn.commit()  #have to commit
 
-	#find smallest N
-	nsmallest = float(min(distances)[0])
-	print 'smallest distance from antenna: ', nsmallest, ' miles'
-	#if lightning that struck was close...
-	if nsmallest and nsmallest < threshold:
-	    print 'threshold detected...'
-	    print '----------------------------------------------------------------'
-	    msg = OSC.OSCMessage()
-	    msg.setAddress('/lightning_interruption')
-	    msg.append('bang')
-	    oclient.send(msg)
-
-	time.sleep(periodicity);
+	if not distances:
+	   time.sleep(periodicity) 
+	else:
+	    #find smallest N
+	    nsmallest = float(min(distances)[0])
+	    print 'smallest distance from antenna: ', nsmallest, ' miles'
+	    #if lightning that struck was close...
+	    if nsmallest and nsmallest < threshold:
+		print 'threshold detected...'
+		print '----------------------------------------------------------------'
+		msg = OSC.OSCMessage()
+		msg.setAddress('/lightning_interruption')
+		msg.append('bang')
+		oclient.send(msg)
+	    time.sleep(periodicity)
 
 def read_XML():
 	global POSTGRESQL_DATABASE, POSTGRESQL_PASSWORD, POSTGRESQL_SERVER, POSTGRESQL_USERNAME, SERVER_PORT
