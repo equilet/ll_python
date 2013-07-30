@@ -1,12 +1,17 @@
 #!/usr/bin/env python
 
-import serial, time, sys, os, psycopg2, xmlrpclib, heapq, OSC
+import serial, time, sys, os, psycopg2, xmlrpclib, heapq, liblo
 from xml.dom import minidom
 
 #osc vars
 iparg = 'localhost'
 portarg = 9000
-oclient = OSC.OSCClient()
+
+try:
+    target = liblo.Address(portarg)
+except liblo.AddressError, err:
+    print str(err)
+    sys.exit()
 
 #xml
 XML_SETTINGS_FILE = "stormforce-xr/sxrserver-settings.xml"
@@ -38,11 +43,9 @@ def connect():
     cur = conn.cursor()
     cur.execute("TRUNCATE TABLE tblstrikes;")
     conn.commit()  #have to commit
-    oclient.connect((iparg, portarg))
 
 def get_data_distances(status):
     while(status):
-
 	#have to order by ID here, because we want the newest data
 	cur.execute("SELECT correctedstrikedistance FROM tblstrikes ORDER BY id ASC LIMIT 1000;")
 	distances = cur.fetchall()
@@ -50,7 +53,7 @@ def get_data_distances(status):
 	conn.commit()  #have to commit
 
 	if not distances:
-	   time.sleep(periodicity) 
+	    time.sleep(periodicity) 
 	else:
 	    #find smallest N
 	    nsmallest = float(min(distances)[0])
@@ -59,10 +62,7 @@ def get_data_distances(status):
 	    if nsmallest and nsmallest < threshold:
 		print 'threshold detected...'
 		print '----------------------------------------------------------------'
-		msg = OSC.OSCMessage()
-		msg.setAddress('/lightning_interruption')
-		msg.append('bang')
-		oclient.send(msg)
+		liblo.send(target, '/lightning_interruption', 'bang')
 	    time.sleep(periodicity)
 
 def read_XML():
